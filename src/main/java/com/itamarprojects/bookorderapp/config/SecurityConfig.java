@@ -49,7 +49,7 @@ public class SecurityConfig
                                         Permissions.WORKER_READ.getPermission())
                         .requestMatchers("/api/orders", "/api/orders/**").hasAuthority("ROLE_MANAGER")
                          .requestMatchers("/api/books").hasAnyAuthority("ROLE_MANAGER","ROLE_WORKER")
-                         .requestMatchers("/api/users").hasAnyAuthority("ROLE_MANAGER")
+                         .requestMatchers("/api/users").hasAnyAuthority("ROLE_MANAGER" , "ROLE_WORKER")
                         .anyRequest()
                         .authenticated())
                 .sessionManagement(session ->

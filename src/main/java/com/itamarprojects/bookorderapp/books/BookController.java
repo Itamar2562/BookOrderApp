@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -50,9 +51,28 @@ public class BookController
 
     }
 
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    @DeleteMapping("/{book_id}")
-    void deleteBookById(@AuthenticationPrincipal User currentUser,  @PathVariable Integer book_id)
+        @PatchMapping("/{book_id}")
+        Book updateBook(@AuthenticationPrincipal User currentUser, @PathVariable Integer book_id,
+                        @Valid @RequestBody BookPatchRequest request)
+        {
+            Map<String, Object> updates = request.toUpdates();
+            if (updates.isEmpty())
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Patch must contain at least one field");
+
+            BookOwners bookOwners = this.bookRepository.getBookOwnersByBookId(book_id)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Book not found"));
+
+            if (!currentUser.getId().equals(bookOwners.managerId()) &&
+                    !currentUser.getId().equals(bookOwners.workerId()))
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+
+            return this.bookRepository.updateBook(book_id, updates)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Book not found"));
+        }
+
+        @ResponseStatus(HttpStatus.NO_CONTENT)
+        @DeleteMapping("/{book_id}")
+        void deleteBookById(@AuthenticationPrincipal User currentUser,  @PathVariable Integer book_id)
     {
         BookOwners bookOwners = this.bookRepository.getBookOwnersByBookId(book_id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Book not found"));
