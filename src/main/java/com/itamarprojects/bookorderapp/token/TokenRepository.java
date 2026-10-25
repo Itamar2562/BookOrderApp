@@ -1,5 +1,7 @@
 package com.itamarprojects.bookorderapp.token;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.Assert;
@@ -11,7 +13,8 @@ import java.util.UUID;
 @Repository
 public class TokenRepository
 {
-    private JdbcClient jdbcClient;
+    private static final Logger log = LoggerFactory.getLogger(TokenRepository.class);
+    private final JdbcClient jdbcClient;
 
     public TokenRepository(JdbcClient jdbcClient){
         this.jdbcClient = jdbcClient;
@@ -49,6 +52,26 @@ public class TokenRepository
                 .list();
     }
 
+    public List<Token> findAllValidTokensByUserIdAndTokenType(UUID user_id ,TokenType tokenType )
+    {
+        return this.jdbcClient.sql("SELECT * FROM Tokens WHERE " +
+                        "expired = FALSE AND revoked = FALSE AND user_id= :user_id AND Token_type = :token_type")
+                .param("user_id",user_id)
+                .param("token_type",tokenType.name())
+                .query(Token.class)
+                .list();
+    }
+
+    public List<Token> findAllValidTokensByUserEmail(String email)
+    {
+        return this.jdbcClient.sql("SELECT Tokens.id,Tokens.token,Tokens.token_type,Tokens.revoked , Tokens.expired , Tokens.user_id" +
+                        " FROM Tokens INNER JOIN Users ON Tokens.user_id = Users.id WHERE " +
+                        "expired = FALSE AND revoked = FALSE AND email= :email")
+                .param("email",email)
+                .query(Token.class)
+                .list();
+    }
+
     public void updateTokenState(Token token){
         var updated = this.jdbcClient.sql("UPDATE Tokens SET expired = :expired, revoked = :revoked WHERE id = :id")
                 .param("expired",token.isExpired())
@@ -59,5 +82,16 @@ public class TokenRepository
 
     public void updateAllTokensState(List<Token> tokens){
         tokens.forEach(this::updateTokenState);
+    }
+
+    public List<Token> getAll()
+    {
+        return this.jdbcClient.sql("SELECT * FROM Tokens").query(Token.class).list();
+    }
+
+    public void cleanUp()
+    {
+        int updated = this.jdbcClient.sql("DELETE FROM Tokens WHERE expired = TRUE OR revoked = TRUE").update();
+        log.info("cleaned up {} Tokens",updated);
     }
 }

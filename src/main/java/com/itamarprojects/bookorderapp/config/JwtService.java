@@ -1,5 +1,8 @@
 package com.itamarprojects.bookorderapp.config;
 
+import com.itamarprojects.bookorderapp.token.Token;
+import com.itamarprojects.bookorderapp.token.TokenRepository;
+import com.itamarprojects.bookorderapp.token.TokenType;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -14,15 +17,26 @@ import java.time.Duration;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 @Service
 public class JwtService
 {
+    private static final String TOKEN_TYPE = "token_type";
 
     private final String secretKey;
+    private final long jwtExpiration;
+    private final long refreshExpiration;
 
-    public JwtService(@Value("${jwt.secret_key}") String secretKey) {this.secretKey = secretKey;}
+    public JwtService(@Value("${jwt.secret_key}") String secretKey,
+                      @Value("${access_token_expiration}") long jwtExpiration,
+                      @Value("${refresh_token_expiration}") long refreshExpiration)
+        {
+        this.secretKey = secretKey;
+        this.jwtExpiration=jwtExpiration;
+        this.refreshExpiration=refreshExpiration;
+        }
 
     public String extractUserName(String token)
     {
@@ -35,25 +49,35 @@ public class JwtService
     }
 
     public String generateToken(UserDetails userDetails){
-        return generateToken(new HashMap<>() , userDetails);
+        return buildToken(Map.of(TOKEN_TYPE, TokenType.ACCESS.name()), userDetails , this.jwtExpiration);
     }
 
-    public String generateToken(
+    public String generateRefreshToken(UserDetails userDetails){
+        return buildToken(Map.of(TOKEN_TYPE, TokenType.REFRESH.name()),userDetails,this.refreshExpiration);
+    }
+
+    public String buildToken(
             Map<String , Object> extraClaims,
-            UserDetails userDetails
+            UserDetails userDetails,
+            long expiration
     ) {
         return Jwts.builder()
                 .setClaims(extraClaims)
                 .setSubject(userDetails.getUsername())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + Duration.ofHours(24).toMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() +expiration))
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    public boolean isTokenValid(String token , UserDetails userDetails){
-        final String username = extractUserName(token);
-        return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
+    public boolean isTokenValid(Token token , UserDetails userDetails , String tokenType){
+        final String username = extractUserName(token.getToken());
+        Claims claims = extractAllClaims(token.getToken());
+        boolean valid = tokenType.equals(claims.get(TOKEN_TYPE , String.class)) &&
+                username.equals(userDetails.getUsername()) && !isTokenExpired(token.getToken()) && !token.isRevoked()
+                && !token.isExpired();
+        System.out.println(valid);
+        return valid;
     }
 
     private boolean isTokenExpired(String token)

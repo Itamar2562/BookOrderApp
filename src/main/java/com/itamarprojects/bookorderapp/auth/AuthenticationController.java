@@ -17,12 +17,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthenticationController
 {
     private final AuthenticationService authenticationService;
-    private final LogoutService logoutService;
 
-    public AuthenticationController(AuthenticationService authenticationService,
-                                    LogoutService logoutService){
+    public AuthenticationController(AuthenticationService authenticationService){
         this.authenticationService = authenticationService;
-        this.logoutService = logoutService;
     }
 
     @PostMapping("/register")
@@ -38,11 +35,10 @@ public class AuthenticationController
 
     }
 
-    @PostMapping("/logout")
-    public void logout(HttpServletRequest request,
-                       @NonNull HttpServletResponse response,
-                       Authentication authentication)
+    @PostMapping("/refresh-token")
+    public void refreshToken(HttpServletRequest request, HttpServletResponse response) throws Exception
     {
-        this.logoutService.logout(request,response,authentication);
+        this.authenticationService.refreshToken(request,response);
     }
+
 }

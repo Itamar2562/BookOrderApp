@@ -3,6 +3,7 @@ package com.itamarprojects.bookorderapp.auth;
 import com.itamarprojects.bookorderapp.config.JwtAuthenticationFilter;
 import com.itamarprojects.bookorderapp.config.JwtService;
 import com.itamarprojects.bookorderapp.config.SecurityConfig;
+import com.itamarprojects.bookorderapp.token.TokenRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -10,6 +11,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -35,6 +37,12 @@ class AuthenticationControllerTest {
 
     @MockitoBean
     private UserDetailsService userDetailsService;
+
+    @MockitoBean
+    private TokenRepository tokenRepository;
+
+    @MockitoBean
+    private LogoutHandler logoutHandler;
 
     @Test
     void missingRegisterBodyReturnsBadRequest() throws Exception {
@@ -80,6 +88,13 @@ class AuthenticationControllerTest {
     @Test
     void protectedRequestWithoutTokenReturnsUnauthorized() throws Exception {
         mockMvc.perform(get("/api/users"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void protectedRequestWithMalformedBearerTokenReturnsUnauthorized() throws Exception {
+        mockMvc.perform(get("/api/users")
+                        .header("Authorization", "Bearer not-a-jwt"))
                 .andExpect(status().isUnauthorized());
     }
 }

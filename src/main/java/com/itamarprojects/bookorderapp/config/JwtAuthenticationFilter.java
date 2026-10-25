@@ -1,6 +1,8 @@
 package com.itamarprojects.bookorderapp.config;
 
+import com.itamarprojects.bookorderapp.token.Token;
 import com.itamarprojects.bookorderapp.token.TokenRepository;
+import com.itamarprojects.bookorderapp.token.TokenType;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Optional;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -55,25 +58,36 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             email = this.jwtService.extractUserName(jwt);
         } catch (JwtException | IllegalArgumentException exception) {
-            filterChain.doFilter(request, response);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
-        if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails;
+        if (email == null) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
 
-            userDetails = this.userDetailsService.loadUserByUsername(email);
-            var isTokenValid = this.tokenRepository.findByTokenString(jwt)
-                    .map(token -> !token.isExpired() && !token.isRevoked())
+        try {
+            UserDetails userDetails = this.userDetailsService.loadUserByUsername(email);
+            Optional<Token> OptionalToken = this.tokenRepository.findByTokenString(jwt);
+            var isTokenValid = OptionalToken.map(token -> !token.isExpired() && !token.isRevoked())
                     .orElse(false);
-            if (isTokenValid && jwtService.isTokenValid(jwt, userDetails)) {
+            if (!isTokenValid || !jwtService.isTokenValid(OptionalToken.get(), userDetails, TokenType.ACCESS.name())) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                return;
+            }
+
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                         userDetails,
                         null,
                         userDetails.getAuthorities()
                 );
-                authToken.setDetails((new WebAuthenticationDetailsSource().buildDetails(request)));
+                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
+        } catch (JwtException | IllegalArgumentException | UsernameNotFoundException exception) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
         }
         filterChain.doFilter(request, response);
     }

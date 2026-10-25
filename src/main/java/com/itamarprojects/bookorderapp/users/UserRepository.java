@@ -82,4 +82,11 @@ public class UserRepository
         return !this.jdbcClient.sql("SELECT * FROM Users WHERE id = ? AND user_role = ?").params(List.of(id, UserRole.MANAGER.toString())).query()
                 .listOfRows().isEmpty();
     }
+
+    public boolean userEmailExists(String email)
+    {
+        return !this.jdbcClient.sql("SELECT * FROM Users WHERE Email = :email")
+                .param("email",email)
+                .query().listOfRows().isEmpty();
+    }
 }

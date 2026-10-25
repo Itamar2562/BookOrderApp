@@ -14,10 +14,10 @@ public class Token
     private boolean expired;
     private UUID userId;
 
-    public Token(String token , boolean revoked, boolean expired , UUID userId)
+    public Token(String token , boolean revoked, boolean expired , UUID userId , TokenType tokenType)
     {
         this.token = token;
-        this.tokenType = TokenType.BEARER;
+        this.tokenType = tokenType;
         this.revoked = revoked;
         this.expired = expired;
         this.userId = userId;
@@ -52,5 +52,17 @@ public class Token
 
     public UUID getUserId() {
         return userId;
+    }
+
+    @Override
+    public String toString() {
+        return "Token{" +
+                "id=" + id +
+                ", token='" + token + '\'' +
+                ", tokenType=" + tokenType +
+                ", revoked=" + revoked +
+                ", expired=" + expired +
+                ", userId=" + userId +
+                '}';
     }
 }
