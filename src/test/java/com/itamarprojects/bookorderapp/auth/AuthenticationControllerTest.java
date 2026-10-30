@@ -97,4 +97,6 @@ class AuthenticationControllerTest {
                         .header("Authorization", "Bearer not-a-jwt"))
                 .andExpect(status().isUnauthorized());
     }
+
+
 }

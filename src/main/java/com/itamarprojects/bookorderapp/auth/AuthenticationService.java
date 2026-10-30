@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-import java.util.random.RandomGenerator;
 
 @Service
 public class AuthenticationService
@@ -160,4 +159,3 @@ public class AuthenticationService
         return new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or expired refresh token");
     }
 }
-

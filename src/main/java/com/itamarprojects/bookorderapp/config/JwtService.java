@@ -1,7 +1,6 @@
 package com.itamarprojects.bookorderapp.config;
 
 import com.itamarprojects.bookorderapp.token.Token;
-import com.itamarprojects.bookorderapp.token.TokenRepository;
 import com.itamarprojects.bookorderapp.token.TokenType;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -13,11 +12,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.security.Key;
-import java.time.Duration;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 
 @Service
@@ -73,16 +69,16 @@ public class JwtService
     public boolean isTokenValid(Token token , UserDetails userDetails , String tokenType){
         final String username = extractUserName(token.getToken());
         Claims claims = extractAllClaims(token.getToken());
-        boolean valid = tokenType.equals(claims.get(TOKEN_TYPE , String.class)) &&
+        return tokenType.equals(claims.get(TOKEN_TYPE , String.class)) &&
                 username.equals(userDetails.getUsername()) && !isTokenExpired(token.getToken()) && !token.isRevoked()
                 && !token.isExpired();
-        System.out.println(valid);
-        return valid;
     }
 
     private boolean isTokenExpired(String token)
     {
-        return extractExpiration(token).before(new Date());
+        boolean e = extractExpiration(token).before(new Date());
+        System.out.println(e);
+        return e;
     }
 
     private Date extractExpiration(String token)

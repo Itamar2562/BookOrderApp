@@ -69,9 +69,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(email);
             Optional<Token> OptionalToken = this.tokenRepository.findByTokenString(jwt);
-            var isTokenValid = OptionalToken.map(token -> !token.isExpired() && !token.isRevoked())
-                    .orElse(false);
-            if (!isTokenValid || !jwtService.isTokenValid(OptionalToken.get(), userDetails, TokenType.ACCESS.name())) {
+            if (OptionalToken.isEmpty()
+                    || !jwtService.isTokenValid(OptionalToken.get(), userDetails, TokenType.ACCESS.name())) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 return;
             }

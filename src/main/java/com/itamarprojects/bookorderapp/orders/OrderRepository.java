@@ -51,4 +51,17 @@ public class OrderRepository
     }
 
 
+    public void finishOrder(Integer orderId)
+    {
+        Timestamp finishedAt = Timestamp.valueOf(LocalDate.now().atStartOfDay());
+        OrderStatus status = OrderStatus.FINISHED;
+
+        var updated = this.jdbcClient.sql("UPDATE Orders SET finished_at = :finished_at, status = :status WHERE id = :id")
+                .param("finished_at",finishedAt)
+                .param("status",status.name())
+                .param("id",orderId).update();
+
+        Assert.state(updated == 1, "Cant update finish order Id" + orderId);
+
+    }
 }

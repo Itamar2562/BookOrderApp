@@ -64,4 +64,17 @@ public class OrderController
         this.orderRepository.deleteOrder(order_id);
     }
 
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PatchMapping("/{order_id}")
+    void finishOrder(@AuthenticationPrincipal User currentUser , @PathVariable Integer order_id){
+        UUID OrderOwner = this.orderRepository.getManagerIdByOrderId(order_id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,"Order not found"));
+        if (!OrderOwner.equals(currentUser.getId()))
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,"Order not found");
+       this.orderRepository.finishOrder(order_id);
+
+
+
+    }
+
 }
